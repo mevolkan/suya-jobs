@@ -38,7 +38,7 @@ class Reconcile_EA
         add_action( 'wp_ajax_fetch_menu_items', [$this, 'fetch_menu_items'] );
         add_action( 'wp_ajax_nopriv_fetch_menu_items', [$this, 'fetch_menu_items'] );
 
-        add_shortcode( 'reconcile_jobs', [$this, 'display_java_menu' ] );
+        add_shortcode( 'reconcile_jobs', [$this, 'display_reconcile_jobs' ] );
 
         add_action( 'wp_ajax_fetch_pantry_items', [$this, 'fetch_pantry_items'] );
         add_action( 'wp_ajax_nopriv_fetch_pantry_items', [$this, 'fetch_pantry_items'] );
@@ -195,59 +195,58 @@ class Reconcile_EA
     }
 
     // Shortcode to display menu categories and container
-    public function display_java_menu()
+    public function display_reconcile_jobs()
     {
         if ( is_a( $GLOBALS['post'], 'WP_Post' ) && stripos( $GLOBALS['post']->post_content, '[java_menu]' ) !== false ) {
-            wp_enqueue_style( 'menu-css', plugin_dir_url( __FILE__ ) . 'styles/style.css', false );
-            wp_enqueue_script( 'menu-ajax-script', plugin_dir_url( __FILE__ ) . 'js/menu-ajax.js', ['jquery'], null, true );
-            wp_localize_script( 'menu-ajax-script', 'ajax_object', ['ajax_url' => admin_url( 'admin-ajax.php' )] );
+            wp_enqueue_style( 'reconcile-jobs-css', plugin_dir_url( __FILE__ ) . 'styles/style.css', false );
+            wp_enqueue_script( 'reconcile-jobs-ajax-script', plugin_dir_url( __FILE__ ) . 'js/reconcile-jobs-ajax.js', ['jquery'], null, true );
+            wp_localize_script( 'reconcile-jobs-ajax-script', 'ajax_object', ['ajax_url' => admin_url( 'admin-ajax.php' )] );
         }
 
-        // Fetch parent menu categories
-        $categories = get_terms( [
-            'taxonomy'   => 'menu_category',
-            'hide_empty' => false,
-            'parent'     => 0, // Only fetch parent categories
+        // Define the post type
+        $post_type = 'job';
+
+        // Get current date in mm/dd/yyyy format
+        $current_date = date( 'm/d/Y' );
+
+        // Convert current date to a format suitable for comparison (Y-m-d)
+        $current_date_sql = date( 'Y-m-d', strtotime( $current_date ) );
+
+        // Query for all jobs with a close_date greater than the current date
+        $query = new WP_Query( [
+            'post_type'      => $post_type,
+            'posts_per_page' => -1, // Retrieve all posts
+            'meta_query'     => [
+                [
+                    'key'     => 'close_date',
+                    'value'   => $current_date_sql,
+                    'compare' => '>',
+                    'type'    => 'DATE', // Ensure proper date comparison
+                ],
+            ],
         ] );
 
-        if ( !empty( $categories ) && !is_wp_error( $categories ) ) {
-            $output = '<div id="menu-categories">';
+        // Check if there are posts
+        if ( $query->have_posts() ) {
+            echo '<h2> Current Openings</h2>';
+            echo '<ul>';
 
-            foreach ( $categories as $category ) {
-                $category_id   = $category->term_id;
-                $category_name = $category->name;
-
-                // Get category thumbnail
-                $thumbnail_id  = get_term_meta( $category_id, 'featured_image', true );
-                $thumbnail_url = wp_get_attachment_url( $thumbnail_id );
-
-                $output .= '<div class="menu-category" data-category-id="' . esc_attr( $category_id ) . '">';
-
-                if ( $thumbnail_url ) {
-                    $output .= '<img src="' . esc_url( $thumbnail_url ) . '" alt="' . esc_attr( $category_name ) . '">';
-                }
-                $output .= '<p>' . esc_html( $category_name ) . '</p>';
-                $output .= '</div>';
+            // Loop through posts and display them
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                echo '<li>';
+                echo '<a href="' . get_permalink() . '">' . get_the_title() . '</a>';
+                echo ' Close Date: ' . esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ) . '';
+                echo '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . get_permalink() . '"> Apply</a>';
+                echo '</li>';
             }
-            $output .= '</div>';
+            echo '</ul>';
 
-            $output .= '<div id="menu-container">';
-            $output .= '<!-- Menu items will be loaded here -->';
-            $output .= '</div>';
-
-            $output .= '<div id="loading-indicator" style="display: none;">Loading...</div>'; // Loading indicator
-
-            // Load initial menu items
-            // $output .= '<script type="text/javascript">
-            //     jQuery(document).ready(function($) {
-            //         loadMenuItems(0, 1);
-            //     });
-            // </script>';
+            // Reset post data
+            wp_reset_postdata();
         } else {
-            $output = '<p>No categories found.</p>';
+            echo '<p>No jobs available</p>';
         }
-
-        return $output;
     }
 
     // AJAX handler to fetch Pantry items
