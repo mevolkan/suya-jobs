@@ -1,0 +1,9 @@
+.job-meta {
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+html .formcraft-css .powered-by {
+    display: none !important;
+}
