@@ -39,6 +39,7 @@ class Reconcile_EA
 
         // Hook into the 'template_include' filter to use custom template
         add_filter( 'template_include', [$this, 'custom_job_template_include'] );
+        add_filter( 'template_include', [$this, 'custom_tender_template_include'] );
     }
 
     /**
@@ -110,7 +111,7 @@ class Reconcile_EA
                 $output .= '<div class="details">
                 <a href="' . get_permalink() . '">' . get_the_title() . '</a>
                 <span>' . esc_html( get_post_meta( get_the_ID(), 'location', true ) ) . '</span>
-               <span>' . esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ) . '</span>
+               <span>Deadline: ' . esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ) . '</span>
                 <span>' . esc_html( get_post_meta( get_the_ID(), 'job_type', true ) ) . '</span>
                 ';
                 $output .= '</div>';
@@ -155,7 +156,7 @@ class Reconcile_EA
         }
 
         // Define the post type
-        $post_type = 'job';
+        $post_type = 'tender';
 
         // Get current date in mm/dd/yyyy format
         $current_date = date( 'm/d/Y' );
@@ -179,22 +180,21 @@ class Reconcile_EA
 
         // Check if there are posts
         if ( $query->have_posts() ) {
-            $output= '<h2> Current Openings</h2>';
-            $output .= '<div class="jobs">';
+            $output= '<h2> Current Tender Opportunities</h2>';
+            $output .= '<div class="tenders">';
 
             // Loop through posts and display them
             while ( $query->have_posts() ) {
                 $query->the_post();
-                $output .= '<div class="single-job">';
+                $output .= '<div class="single-tender">';
                 $output .= '<div class="details">
                     <a href="' . get_permalink() . '">' . get_the_title() . '</a>
-                    <span>' . esc_html( get_post_meta( get_the_ID(), 'location', true ) ) . '</span>
-                   <span>' . esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ) . '</span>
-                    <span>' . esc_html( get_post_meta( get_the_ID(), 'job_type', true ) ) . '</span>
+                   <span>Ref No: ' . esc_html( get_post_meta( get_the_ID(), 'reference_number', true ) ) . '</span>
+                   <span>Deadline ' . esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ) . '</span>
                     ';
                 $output .= '</div>';
                 $output .= '<div class="cta">';
-                $output .= '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . get_permalink() . '"> Apply</a>';
+                $output .= '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . esc_html( wp_get_attachment_url( get_post_meta( get_the_ID(), 'download', true ) ) ) . '"> Download </a>';
                 $output .= '</div>';
                 $output .= '</div>';
             }
@@ -203,7 +203,7 @@ class Reconcile_EA
             // Reset post data
             wp_reset_postdata();
         } else {
-            $output =  '<p>No jobs available</p>';
+            $output =  '<p>No tenders available</p>';
         }
 
         return $output;

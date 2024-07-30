@@ -6,13 +6,13 @@ if ( have_posts() ) {
         the_post();
         ?>
         <div class="container main-content">
-            <div class="job-single">
+            <div class="single-job">
                 <h1><?php the_title(); ?></h1>
 
                 <!-- Job Details -->
                 <div class="job-content">
                     <!-- Job Metadata -->
-                    <div class="job-meta">
+                    <div class="details">
                         <div>
                             <p><strong>Location:</strong> <?php echo esc_html( get_post_meta( get_the_ID(), 'location', true ) ); ?></p>
                         </div>
@@ -20,7 +20,7 @@ if ( have_posts() ) {
                             <p><strong>Close Date:</strong> <?php echo esc_html( get_post_meta( get_the_ID(), 'close_date', true ) ); ?></p>
                         </div>
                         <div>
-                            <p><strong>Close Date:</strong> <?php echo esc_html( get_post_meta( get_the_ID(), 'job_type', true ) ); ?></p>
+                           <a class="nectar-button large regular accent-color  regular-button" role="button" href="<?php echo esc_html( wp_get_attachment_url( get_post_meta( get_the_ID(), 'download', true ) ) ); ?>"> Download </a></p>
                         </div>
                     </div>
                     <!-- Add any other job metadata here -->

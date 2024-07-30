@@ -1,17 +1,22 @@
-.job-meta {
+.tender-meta {
     padding: 10px 0;
     display: flex;
     justify-content: space-between;
 }
-.single-job .job-content .details {
+
+.tender-meta>div {
+    display: flex;
+    align-items: center;
+}
+
+.tender-meta .nectar-button {
+    margin: 0;
+}
+
+.single-tender .tender-content .details {
     display: flex;
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
     justify-content: space-between;
-  }
-  
-
-html .formcraft-css .powered-by {
-    display: none !important;
 }

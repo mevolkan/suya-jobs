@@ -1,4 +1,4 @@
-.jobs .single-job {
+.jobs .single-job, .tenders .single-tender  {
   padding: 15px 0;
   display: flex;
   justify-content: space-between;
