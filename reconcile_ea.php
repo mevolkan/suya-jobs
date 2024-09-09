@@ -56,7 +56,7 @@ class Reconcile_EA
             }
 
         if (has_shortcode(get_post()->post_content, 'reconcile_projects')) {
-            wp_enqueue_style('reconcile-styles', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
+            wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
             wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js', ['jquery']);
             wp_enqueue_script('reconcile-projects-script', plugin_dir_url(__FILE__) . 'js/map.js', ['jquery'], RECONCILE_EA_VERSION, true);
             }
