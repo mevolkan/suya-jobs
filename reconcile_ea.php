@@ -2,295 +2,160 @@
 /*
     Plugin Name: Reconcile EA
     Plugin URI: http://volkan.co.ke
-    Description:This is plugin displays Jobs among other things
+    Description: This plugin displays Jobs and other opportunities
     Author: Volkan
     Version: 1.0
     Author URI: http://volkan.co.ke
-    License:GPL-2.0+
-    License URI:http://www.gnu.org/licenses/gpl-2.0.txt
-
- */
+    License: GPL-2.0+
+    License URI: http://www.gnu.org/licenses/gpl-2.0.txt
+*/
 
 if (!defined('ABSPATH')) {
     exit;
     }
 
-if (!defined('Reconcile_EA')) {
-    define('Reconcile_EA', '1.0.0');
-    }
+define('RECONCILE_EA_VERSION', '1.0.0');
 
 class Reconcile_EA
     {
+    private static $instance = null;
 
-    /**
-     * Static property to hold our singleton instance
-     */
-    public static $instance = false;
-
-    /**
-     * This is our constructor
-     *
-     * @return void
-     */
     private function __construct()
+        {
+        add_action('init', [$this, 'register_shortcodes']);
+        add_filter('template_include', [$this, 'custom_template_include']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
+        }
+
+    public static function getInstance()
+        {
+        if (self::$instance === null) {
+            self::$instance = new self();
+            }
+        return self::$instance;
+        }
+
+    public function register_shortcodes()
         {
         add_shortcode('reconcile_opportunities', [$this, 'display_reconcile_opportunities']);
         add_shortcode('reconcile_jobs', [$this, 'display_reconcile_jobs']);
         add_shortcode('reconcile_procurement', [$this, 'display_reconcile_tenders']);
-
-        // Hook into the 'template_include' filter to use custom template
-        add_filter('template_include', [$this, 'custom_job_template_include']);
-        add_filter('template_include', [$this, 'custom_tender_template_include']);
+        add_shortcode('reconcile_projects', [$this, 'display_reconcile_projects']);
         }
 
-    /**
-     * If an instance exists, this returns it.  If not, it creates one and
-     * retuns it.
-     *
-     * @return Reconcile_EA
-     */
-    public static function getInstance()
+    public function enqueue_assets()
         {
-        if (!self::$instance) {
-            self::$instance = new self();
+        if (
+            is_singular(['job', 'tender']) || has_shortcode(get_post()->post_content, 'reconcile_opportunities') ||
+            has_shortcode(get_post()->post_content, 'reconcile_jobs') ||
+            has_shortcode(get_post()->post_content, 'reconcile_procurement')
+        ) {
+            wp_enqueue_style('reconcile-styles', plugin_dir_url(__FILE__) . 'styles/style.css', [], RECONCILE_EA_VERSION);
+            wp_enqueue_script('reconcile-ajax-script', plugin_dir_url(__FILE__) . 'js/reconcile.js', ['jquery'], RECONCILE_EA_VERSION, true);
+            wp_localize_script('reconcile-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
             }
 
-        return self::$instance;
-        }
-
-    /**
-     * load textdomain
-     *
-     * @return void
-     */
-    public function textdomain()
-        {
-        load_plugin_textdomain('reconcile-ea', false, dirname(plugin_basename(__FILE__)) . '/languages/');
-        }
-
-    // Shortcode to display jobs and procurement notices
-    public function display_reconcile_opportunities()
-        {
-        if (is_a($GLOBALS['post'], 'WP_Post') && stripos($GLOBALS['post']->post_content, '[reconcile_opportunities') !== false) {
-            wp_enqueue_style('reconcile-jobs-css', plugin_dir_url(__FILE__) . 'styles/style.css', false);
-            wp_enqueue_script('reconcile-jobs-ajax-script', plugin_dir_url(__FILE__) . 'js/reconcile-jobs-ajax.js', ['jquery'], null, true);
-            wp_localize_script('reconcile-jobs-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
+        if (has_shortcode(get_post()->post_content, 'reconcile_projects')) {
+            wp_enqueue_style('reconcile-styles', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
+            wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js', ['jquery']);
+            wp_enqueue_script('reconcile-projects-script', plugin_dir_url(__FILE__) . 'js/map.js', ['jquery'], RECONCILE_EA_VERSION, true);
             }
+        }
 
-        // Define the post type
-        $post_type = array('job', 'tender');
+    public function custom_template_include($template)
+        {
+        $post_type = get_post_type();
+        if (is_singular(['job', 'tender'])) {
+            $custom_template = plugin_dir_path(__FILE__) . "includes/templates/single-{$post_type}.php";
+            if (file_exists($custom_template)) {
+                return $custom_template;
+                }
+            }
+        return $template;
+        }
 
-        // Get current date in mm/dd/yyyy format
-        $current_date = date('m/d/Y');
-
-        // Convert current date to a format suitable for comparison (Y-m-d)
-        $current_date_sql = date('Y-m-d', strtotime($current_date));
-
-        // Query for all jobs with a close_date greater than the current date
-        $query = new WP_Query([
+    private function get_opportunities($post_type)
+        {
+        $current_date = date('Y-m-d');
+        $args = [
             'post_type' => $post_type,
-            'post_status' => ['publish'],
+            'post_status' => 'publish',
             'posts_per_page' => -1,
             'meta_query' => [
                 [
                     'key' => 'close_date',
-                    'value' => $current_date_sql,
+                    'value' => $current_date,
                     'compare' => '>',
-                    'type' => 'DATE', // Ensure proper date comparison
+                    'type' => 'DATE',
                 ],
             ],
-        ]);
-
-        // Check if there are posts
-        if ($query->have_posts()) {
-            $output = '<h2> Current Opportunities</h2>';
-            $output .= '<div class="jobs">';
-
-            // Loop through posts and display them
-            while ($query->have_posts()) {
-                $query->the_post();
-                $output .= '<div class="single-job">';
-                $output .= '<div class="details">
-                    <a href="' . get_permalink() . '">' . get_the_title() . '</a>
-                    <span>' . esc_html(get_post_meta(get_the_ID(), 'location', true)) . '</span>
-                   <span>Closing: ' . esc_html(get_post_meta(get_the_ID(), 'close_date', true)) . '</span>
-                    <span>' . esc_html(get_post_meta(get_the_ID(), 'job_type', true)) . '</span>
-                    ';
-                $output .= '</div>';
-                $output .= '<div class="cta">';
-                $output .= '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . get_permalink() . '"> Apply</a>';
-                $output .= '</div>';
-                $output .= '</div>';
-                }
-            $output .= '</div>';
-
-            // Reset post data
-            wp_reset_postdata();
-            } else {
-            $output = '<p>No opportunities available</p>';
-            }
-
-        return $output;
+        ];
+        return new WP_Query($args);
         }
 
-    // Shortcode to display jobs
+    public function display_reconcile_opportunities()
+        {
+        return $this->display_items(['job', 'tender'], 'Current Opportunities');
+        }
+
     public function display_reconcile_jobs()
         {
-        if (is_a($GLOBALS['post'], 'WP_Post') && stripos($GLOBALS['post']->post_content, '[reconcile_jobs') !== false) {
-            wp_enqueue_style('reconcile-jobs-css', plugin_dir_url(__FILE__) . 'styles/style.css', false);
-            wp_enqueue_script('reconcile-jobs-ajax-script', plugin_dir_url(__FILE__) . 'js/reconcile-jobs-ajax.js', ['jquery'], null, true);
-            wp_localize_script('reconcile-jobs-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
-            }
-
-        // Define the post type
-        $post_type = 'job';
-
-        // Get current date in mm/dd/yyyy format
-        $current_date = date('m/d/Y');
-
-        // Convert current date to a format suitable for comparison (Y-m-d)
-        $current_date_sql = date('Y-m-d', strtotime($current_date));
-
-        // Query for all jobs with a close_date greater than the current date
-        $query = new WP_Query([
-            'post_type' => $post_type,
-            'post_status' => ['publish'],
-            'posts_per_page' => -1, // Retrieve all posts
-            'meta_query' => [
-                [
-                    'key' => 'close_date',
-                    'value' => $current_date_sql,
-                    'compare' => '>',
-                    'type' => 'DATE', // Ensure proper date comparison
-                ],
-            ],
-        ]);
-
-        // Check if there are posts
-        if ($query->have_posts()) {
-            $output = '<h2> Current Openings</h2>';
-            $output .= '<div class="jobs">';
-
-            // Loop through posts and display them
-            while ($query->have_posts()) {
-                $query->the_post();
-                $output .= '<div class="single-job">';
-                $output .= '<div class="details">
-                <a href="' . get_permalink() . '">' . get_the_title() . '</a>
-                <span>' . esc_html(get_post_meta(get_the_ID(), 'location', true)) . '</span>
-               <span>Deadline: ' . esc_html(get_post_meta(get_the_ID(), 'close_date', true)) . '</span>
-                ';
-                $output .= '</div>';
-                $output .= '<div class="cta">';
-                $output .= '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . get_permalink() . '"> Apply</a>';
-                $output .= '</div>';
-                $output .= '</div>';
-                }
-            $output .= '</div>';
-
-            // Reset post data
-            wp_reset_postdata();
-            } else {
-            $output = '<p>No jobs available</p>';
-            }
-
-        return $output;
+        return $this->display_items('job', 'Current Openings');
         }
 
-    public function custom_job_template_include($template)
-        {
-        if (is_singular('job')) {
-            wp_enqueue_style('single-job-style', plugins_url('styles/single-job-styles.css', __FILE__));
-            // Path to the custom template file
-            $custom_template = plugin_dir_path(__FILE__) . '/includes/templates/single-job.php';
-
-            if (file_exists($custom_template)) {
-                return $custom_template;
-                }
-            }
-
-        return $template;
-        }
-
-    // Shortcode to display menu categories and container
     public function display_reconcile_tenders()
         {
-        if (is_a($GLOBALS['post'], 'WP_Post') && stripos($GLOBALS['post']->post_content, '[reconcile_jobs') !== false) {
-            wp_enqueue_style('reconcile-jobs-css', plugin_dir_url(__FILE__) . 'styles/style.css', false);
-            wp_enqueue_script('reconcile-jobs-ajax-script', plugin_dir_url(__FILE__) . 'js/reconcile-jobs-ajax.js', ['jquery'], null, true);
-            wp_localize_script('reconcile-jobs-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
-            }
-
-        // Define the post type
-        $post_type = 'tender';
-
-        // Get current date in mm/dd/yyyy format
-        $current_date = date('m/d/Y');
-
-        // Convert current date to a format suitable for comparison (Y-m-d)
-        $current_date_sql = date('Y-m-d', strtotime($current_date));
-
-        // Query for all jobs with a close_date greater than the current date
-        $query = new WP_Query([
-            'post_type' => $post_type,
-            'posts_per_page' => -1, // Retrieve all posts
-            'post_status' => ['publish'],
-            'meta_query' => [
-                [
-                    'key' => 'close_date',
-                    'value' => $current_date_sql,
-                    'compare' => '>',
-                    'type' => 'DATE', // Ensure proper date comparison
-                ],
-            ],
-        ]);
-
-        // Check if there are posts
-        if ($query->have_posts()) {
-            $output = '<h2> Current Tender Opportunities</h2>';
-            $output .= '<div class="tenders">';
-
-            // Loop through posts and display them
-            while ($query->have_posts()) {
-                $query->the_post();
-                $output .= '<div class="single-tender">';
-                $output .= '<div class="details">
-                    <a href="' . get_permalink() . '">' . get_the_title() . '</a>
-                   <span>Ref No: ' . esc_html(get_post_meta(get_the_ID(), 'reference_number', true)) . '</span>
-                   <span>Deadline ' . esc_html(get_post_meta(get_the_ID(), 'close_date', true)) . '</span>
-                    ';
-                $output .= '</div>';
-                $output .= '<div class="cta">';
-                $output .= '<a class="nectar-button large regular accent-color  regular-button" role="button" href="' . esc_html(wp_get_attachment_url(get_post_meta(get_the_ID(), 'download', true))) . '"> Download </a>';
-                $output .= '</div>';
-                $output .= '</div>';
-                }
-            $output .= '</div>';
-
-            // Reset post data
-            wp_reset_postdata();
-            } else {
-            $output = '<p>No procurement notice at the moment</p>';
-            }
-
-        return $output;
+        return $this->display_items('tender', 'Current Tender Opportunities');
         }
 
-    public function custom_tender_template_include($template)
+    public function display_reconcile_projects()
         {
-        if (is_singular('tender')) {
-            wp_enqueue_style('single-tender-style', plugins_url('styles/single-tender-styles.css', __FILE__));
-            // Path to the custom template file
-            $custom_template = plugin_dir_path(__FILE__) . '/includes/templates/single-tender.php';
+        ob_start();
+        ?>
+        <div id="projects-map" style="height: 600px; width: 100%;"></div>
+        <?php
+        // Return the buffered content
+        return ob_get_clean();
+        }
 
-            if (file_exists($custom_template)) {
-                return $custom_template;
-                }
+    private function display_items($post_type, $title)
+        {
+        $query = $this->get_opportunities($post_type);
+        if (!$query->have_posts()) {
+            return '<p>No ' . strtolower($title) . ' available</p>';
             }
 
-        return $template;
+        $output = "<h2>{$title}</h2><div class='" . (is_array($post_type) ? 'jobs' : $post_type . 's') . "'>";
+        while ($query->have_posts()) {
+            $query->the_post();
+            $output .= $this->get_item_html(get_post_type());
+            }
+        wp_reset_postdata();
+        return $output . '</div>';
+        }
+
+    private function get_item_html($post_type)
+        {
+        $html = '<div class="single-' . $post_type . '"><div class="details">';
+        $html .= '<a href="' . get_permalink() . '">' . get_the_title() . '</a>';
+
+        if ($post_type === 'job') {
+            $html .= '<span>' . esc_html(get_post_meta(get_the_ID(), 'location', true)) . '</span>';
+            } elseif ($post_type === 'tender') {
+            $html .= '<span>Ref No: ' . esc_html(get_post_meta(get_the_ID(), 'reference_number', true)) . '</span>';
+            }
+
+        $html .= '<span>' . ($post_type === 'job' ? 'Deadline: ' : 'Deadline ') . esc_html(get_post_meta(get_the_ID(), 'close_date', true)) . '</span>';
+
+        $html .= '</div><div class="cta">';
+        if ($post_type === 'job') {
+            $html .= '<a class="nectar-button large regular accent-color regular-button" href="' . get_permalink() . '">Apply</a>';
+            } elseif ($post_type === 'tender') {
+            $html .= '<a class="nectar-button large regular accent-color regular-button" href="' . esc_url(wp_get_attachment_url(get_post_meta(get_the_ID(), 'download', true))) . '">Download</a>';
+            }
+        $html .= '</div></div>';
+        return $html;
         }
     }
 
-// Instantiate our class
-$Reconcile_EA = Reconcile_EA::getInstance();
+Reconcile_EA::getInstance();
