@@ -1,5 +1,11 @@
 {
     "require-dev": {
-        "tareq1988/wp-php-cs-fixer": "^1.0"
+        "tareq1988/wp-php-cs-fixer": "^1.0",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
