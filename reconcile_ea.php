@@ -46,7 +46,7 @@ class Reconcile_EA
     public function enqueue_assets()
         {
         if (
-            is_singular(['job', 'tender']) || has_shortcode(get_post()->post_content, 'reconcile_opportunities') ||
+            is_singular(['job', 'tender','event']) || has_shortcode(get_post()->post_content, 'reconcile_opportunities') ||
             has_shortcode(get_post()->post_content, 'reconcile_jobs') ||
             has_shortcode(get_post()->post_content, 'reconcile_procurement')
         ) {
@@ -65,7 +65,7 @@ class Reconcile_EA
     public function custom_template_include($template)
         {
         $post_type = get_post_type();
-        if (is_singular(['job', 'tender'])) {
+        if (is_singular(['event', 'job', 'tender'])) {
             $custom_template = plugin_dir_path(__FILE__) . "includes/templates/single-{$post_type}.php";
             if (file_exists($custom_template)) {
                 return $custom_template;
@@ -76,7 +76,7 @@ class Reconcile_EA
 
     private function get_opportunities($post_type)
         {
-        $current_date = date('Y-m-d');
+        $current_date = gmdate('Y-m-d');
         $args = [
             'post_type' => $post_type,
             'post_status' => 'publish',
