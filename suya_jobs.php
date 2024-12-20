@@ -25,6 +25,8 @@ class Suya_jobs
         add_action('init', [$this, 'register_shortcodes']);
         add_filter('template_include', [$this, 'custom_template_include']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
+        add_action('init', [$this, 'register_job_elementor_locations']);
+        add_action('elementor/theme/register_conditions', [$this, 'add_job_template_conditions']);
         }
 
     public static function getInstance()
@@ -39,29 +41,19 @@ class Suya_jobs
         {
         add_shortcode('suya_opportunities', [$this, 'display_suya_opportunities']);
         add_shortcode('suya_jobs', [$this, 'display_suya_jobs']);
-        add_shortcode('suya_procurement', [$this, 'display_suya_tenders']);
-        add_shortcode('suya_projects', [$this, 'display_suya_projects']);
-        add_shortcode('suya_events', [$this, 'display_suya_events']);
         }
 
     public function enqueue_assets()
         {
         if (
             is_singular(['job', 'tender', 'event']) || has_shortcode(get_post()->post_content, 'suya_opportunities') ||
-            has_shortcode(get_post()->post_content, 'suya_jobs') ||
-            has_shortcode(get_post()->post_content, 'suya_procurement') ||
-            has_shortcode(get_post()->post_content, 'suya_events')
+            has_shortcode(get_post()->post_content, 'suya_jobs') 
         ) {
             wp_enqueue_style('suya-styles', plugin_dir_url(__FILE__) . 'styles/style.css', [], SUYA_JOBS_VERSION);
             wp_enqueue_script('suya-ajax-script', plugin_dir_url(__FILE__) . 'js/suya.js', ['jquery'], SUYA_JOBS_VERSION, true);
             wp_localize_script('suya-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
             }
 
-        if (has_shortcode(get_post()->post_content, 'suya_projects')) {
-            wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
-            wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js', ['jquery']);
-            wp_enqueue_script('suya-projects-script', plugin_dir_url(__FILE__) . 'js/map.js', ['jquery'], SUYA_JOBS_VERSION, true);
-            }
         }
 
     public function custom_template_include($template)
@@ -105,9 +97,6 @@ class Suya_jobs
         return $this->display_items('job', 'Current Openings');
         }
 
-
-
-
     private function display_items($post_type, $title)
         {
         $query = $this->get_opportunities($post_type);
@@ -145,6 +134,29 @@ class Suya_jobs
             }
         $html .= '</div></div>';
         return $html;
+        }
+
+        function register_job_elementor_locations() {
+            if (did_action('elementor/loaded')) {
+                \ElementorPro\Plugin::instance()->modules_manager->get_modules('theme-builder')->get_locations_manager()->register_location(
+                    'single-job',
+                    [
+                        'label' => __('Single Job Template', 'suya-jobs'),
+                        'multiple' => false,
+                        'edit_in_content' => true,
+                    ]
+                );
+            }
+        }
+       
+        
+        // Add support for Elementor's template conditions
+        function add_job_template_conditions($conditions_manager) {
+            $conditions_manager->get_condition('singular')->register_sub_condition(
+                new \ElementorPro\Modules\ThemeBuilder\Conditions\Post([
+                    'post_type' => 'job',
+                ])
+            );
         }
     }
 
