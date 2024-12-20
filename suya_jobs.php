@@ -1,6 +1,6 @@
 <?php
 /*
-    Plugin Name: Reconcile EA
+    Plugin Name: Suya jobs plugin
     Plugin URI: http://volkan.co.ke
     Description: This plugin displays Jobs and other opportunities
     Author: Volkan
@@ -14,9 +14,9 @@ if (!defined('ABSPATH')) {
     exit;
     }
 
-define('RECONCILE_EA_VERSION', '1.0.0');
+define('SUYA_JOBS_VERSION', '1.0.0');
 
-class Reconcile_EA
+class Suya_jobs
     {
     private static $instance = null;
 
@@ -37,28 +37,30 @@ class Reconcile_EA
 
     public function register_shortcodes()
         {
-        add_shortcode('reconcile_opportunities', [$this, 'display_reconcile_opportunities']);
-        add_shortcode('reconcile_jobs', [$this, 'display_reconcile_jobs']);
-        add_shortcode('reconcile_procurement', [$this, 'display_reconcile_tenders']);
-        add_shortcode('reconcile_projects', [$this, 'display_reconcile_projects']);
+        add_shortcode('suya_opportunities', [$this, 'display_suya_opportunities']);
+        add_shortcode('suya_jobs', [$this, 'display_suya_jobs']);
+        add_shortcode('suya_procurement', [$this, 'display_suya_tenders']);
+        add_shortcode('suya_projects', [$this, 'display_suya_projects']);
+        add_shortcode('suya_events', [$this, 'display_suya_events']);
         }
 
     public function enqueue_assets()
         {
         if (
-            is_singular(['job', 'tender','event']) || has_shortcode(get_post()->post_content, 'reconcile_opportunities') ||
-            has_shortcode(get_post()->post_content, 'reconcile_jobs') ||
-            has_shortcode(get_post()->post_content, 'reconcile_procurement')
+            is_singular(['job', 'tender', 'event']) || has_shortcode(get_post()->post_content, 'suya_opportunities') ||
+            has_shortcode(get_post()->post_content, 'suya_jobs') ||
+            has_shortcode(get_post()->post_content, 'suya_procurement') ||
+            has_shortcode(get_post()->post_content, 'suya_events')
         ) {
-            wp_enqueue_style('reconcile-styles', plugin_dir_url(__FILE__) . 'styles/style.css', [], RECONCILE_EA_VERSION);
-            wp_enqueue_script('reconcile-ajax-script', plugin_dir_url(__FILE__) . 'js/reconcile.js', ['jquery'], RECONCILE_EA_VERSION, true);
-            wp_localize_script('reconcile-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
+            wp_enqueue_style('suya-styles', plugin_dir_url(__FILE__) . 'styles/style.css', [], SUYA_JOBS_VERSION);
+            wp_enqueue_script('suya-ajax-script', plugin_dir_url(__FILE__) . 'js/suya.js', ['jquery'], SUYA_JOBS_VERSION, true);
+            wp_localize_script('suya-ajax-script', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')]);
             }
 
-        if (has_shortcode(get_post()->post_content, 'reconcile_projects')) {
+        if (has_shortcode(get_post()->post_content, 'suya_projects')) {
             wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
             wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js', ['jquery']);
-            wp_enqueue_script('reconcile-projects-script', plugin_dir_url(__FILE__) . 'js/map.js', ['jquery'], RECONCILE_EA_VERSION, true);
+            wp_enqueue_script('suya-projects-script', plugin_dir_url(__FILE__) . 'js/map.js', ['jquery'], SUYA_JOBS_VERSION, true);
             }
         }
 
@@ -93,30 +95,18 @@ class Reconcile_EA
         return new WP_Query($args);
         }
 
-    public function display_reconcile_opportunities()
+    public function display_suya_opportunities()
         {
-        return $this->display_items(['job', 'tender'], 'Current Opportunities');
+        return $this->display_items(['job'], 'Current Opportunities');
         }
 
-    public function display_reconcile_jobs()
+    public function display_suya_jobs()
         {
         return $this->display_items('job', 'Current Openings');
         }
 
-    public function display_reconcile_tenders()
-        {
-        return $this->display_items('tender', 'Current Tender Opportunities');
-        }
 
-    public function display_reconcile_projects()
-        {
-        ob_start();
-        ?>
-        <div id="projects-map" style="height: 600px; width: 100%;"></div>
-        <?php
-        // Return the buffered content
-        return ob_get_clean();
-        }
+
 
     private function display_items($post_type, $title)
         {
@@ -158,4 +148,4 @@ class Reconcile_EA
         }
     }
 
-Reconcile_EA::getInstance();
+Suya_jobs::getInstance();
