@@ -52,6 +52,56 @@ class Suya_Jobs
         add_action('save_post_job', [$this, 'save_jobs_meta'], 10, 2);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_filter('template_include', [$this, 'custom_template_include']);
+
+        // Add block editor support
+        add_action('enqueue_block_editor_assets', [$this, 'enqueue_block_editor_assets']);
+        add_action('init', [$this, 'register_meta_fields']);
+        }
+    /**
+     * Register meta fields for block editor
+     */
+    public function register_meta_fields()
+        {
+        register_post_meta('job', '_close_date', [
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+                }
+        ]);
+
+        register_post_meta('job', '_location', [
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+                }
+        ]);
+
+        register_post_meta('job', '_job_type', [
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+                }
+        ]);
+        }
+
+    /**
+     * Enqueue block editor assets
+     */
+    public function enqueue_block_editor_assets()
+        {
+        wp_enqueue_script(
+            'suya-jobs-block-editor',
+            plugin_dir_url(__FILE__) . 'js/block-editor.js',
+            ['wp-blocks', 'wp-element', 'wp-components', 'wp-editor'],
+            self::VERSION,
+            true
+        );
         }
 
     /**
@@ -159,12 +209,28 @@ class Suya_Jobs
         $close_date = get_post_meta($post->ID, '_close_date', true);
         $location = get_post_meta($post->ID, '_location', true);
         $download_id = get_post_meta($post->ID, '_download', true);
+        ?>
+        <p>
+            <label for="close_date"><?php _e('Close Date:', 'suya-jobs'); ?></label>
+            <input type="date" id="close_date" name="close_date" value="<?php echo esc_attr($close_date); ?>" required>
+        </p>
 
-        $this->render_meta_box_template('job-details', [
-            'close_date' => $close_date,
-            'location' => $location,
-            'download_id' => $download_id
-        ]);
+        <p>
+            <label for="location"><?php _e('Location:', 'suya-jobs'); ?></label>
+            <input type="text" id="location" name="location" value="<?php echo esc_attr($location); ?>" maxlength="255">
+        </p>
+
+        <p>
+            <label for="download"><?php _e('Download:', 'suya-jobs'); ?></label>
+            <?php
+            $download_url = wp_get_attachment_url($download_id);
+            if ($download_url) {
+                echo '<br><a href="' . esc_url($download_url) . '">' . __('Current file', 'suya-jobs') . '</a>';
+                }
+            ?>
+            <input type="file" id="download" name="download" accept=".pdf,.doc">
+        </p>
+        <?php
         }
 
     /**
@@ -177,12 +243,16 @@ class Suya_Jobs
         $current_type = get_post_meta($post->ID, '_job_type', true);
         $job_types = $this->get_job_types();
 
-        $this->render_meta_box_template('job-type', [
-            'current_type' => $current_type,
-            'job_types' => $job_types
-        ]);
+        foreach ($job_types as $value => $label) {
+            ?>
+            <p>
+                <input type="radio" id="job_type_<?php echo esc_attr($value); ?>" name="job_type"
+                    value="<?php echo esc_attr($value); ?>" <?php checked($current_type, $value); ?>>
+                <label for="job_type_<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></label>
+            </p>
+            <?php
+            }
         }
-
     /**
      * Get available job types
      */
@@ -299,9 +369,6 @@ class Suya_Jobs
             ]);
             }
 
-        if ($this->should_load_map_assets()) {
-            $this->enqueue_map_assets();
-            }
         }
 
     /**
@@ -309,33 +376,11 @@ class Suya_Jobs
      */
     private function should_load_assets(): bool
         {
-        return is_singular(['job', 'tender', 'event']) ||
-            $this->has_any_shortcode(['suya_opportunities', 'suya_jobs', 'suya_procurement', 'suya_events']);
+        return is_singular(['job']) ||
+            $this->has_any_shortcode([ 'suya_jobs']);
         }
 
-    /**
-     * Check if map assets should be loaded
-     */
-    private function should_load_map_assets(): bool
-        {
-        return $this->has_any_shortcode(['suya_projects']);
-        }
 
-    /**
-     * Enqueue map-specific assets
-     */
-    private function enqueue_map_assets(): void
-        {
-        wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', []);
-        wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js', ['jquery']);
-        wp_enqueue_script(
-            'suya-projects-script',
-            plugin_dir_url(__FILE__) . 'js/map.js',
-            ['jquery'],
-            self::VERSION,
-            true
-        );
-        }
 
     /**
      * Check if post has any of the specified shortcodes
