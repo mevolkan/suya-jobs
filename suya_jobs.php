@@ -1,6 +1,6 @@
 <?php
 /*
-    Plugin Name: Suya jobs plugin
+    Plugin Name: Suya jobs
     Plugin URI: http://volkan.co.ke
     Description: This plugin displays Jobs and other opportunities
     Author: Volkan
@@ -120,7 +120,8 @@ class Suya_Jobs
     public function register_blocks()
         {
         if (!file_exists($this->blocks_dir)) {
-            mkdir($this->blocks_dir, 0755, true);
+            wp_mkdir_p($this->blocks_dir);
+            chmod($this->blocks_dir,0755);
             }
 
         register_block_type('suya-jobs/job-application-form', array(
@@ -266,21 +267,21 @@ class Suya_Jobs
         $download_id = get_post_meta($post->ID, '_download', true);
         ?>
         <p>
-            <label for="close_date"><?php _e('Close Date:', 'suya-jobs'); ?></label>
+            <label for="close_date"><?php esc_html_e('Close Date:', 'suya-jobs'); ?></label>
             <input type="date" id="close_date" name="close_date" value="<?php echo esc_attr($close_date); ?>" required>
         </p>
 
         <p>
-            <label for="location"><?php _e('Location:', 'suya-jobs'); ?></label>
+            <label for="location"><?php esc_html_e('Location:', 'suya-jobs'); ?></label>
             <input type="text" id="location" name="location" value="<?php echo esc_attr($location); ?>" maxlength="255">
         </p>
 
         <p>
-            <label for="download"><?php _e('Download:', 'suya-jobs'); ?></label>
+            <label for="download"><?php esc_html_e( 'Download:', 'suya-jobs'); ?></label>
             <?php
             $download_url = wp_get_attachment_url($download_id);
             if ($download_url) {
-                echo '<br><a href="' . esc_url($download_url) . '">' . __('Current file', 'suya-jobs') . '</a>';
+                echo '<br><a href="' . esc_url($download_url) . '">' . esc_html__('Current file', 'suya-jobs') . '</a>';
                 }
             ?>
             <input type="file" id="download" name="download" accept=".pdf,.doc">
@@ -351,8 +352,8 @@ class Suya_Jobs
 
         if (
             !isset($_POST['jobs_meta_box_nonce'], $_POST['job_type_meta_box_nonce']) ||
-            !wp_verify_nonce($_POST['jobs_meta_box_nonce'], 'jobs_meta_box') ||
-            !wp_verify_nonce($_POST['job_type_meta_box_nonce'], 'job_type_meta_box')
+            !wp_verify_nonce(wp_unslash($_POST['jobs_meta_box_nonce']), 'jobs_meta_box') ||
+            !wp_verify_nonce(wp_unslash($_POST['job_type_meta_box_nonce']), 'job_type_meta_box')
         ) {
             return false;
             }
@@ -367,7 +368,7 @@ class Suya_Jobs
         {
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
-                update_post_meta($post_id, "_{$field}", sanitize_text_field($_POST[$field]));
+                update_post_meta($post_id, "_{$field}", sanitize_text_field(wp_unslash($_POST[$field])));
                 }
             }
         }
@@ -382,7 +383,10 @@ class Suya_Jobs
             }
 
         $allowed_types = ['application/pdf', 'application/msword'];
-        $file_type = $_FILES['download']['type'];
+        if ( isset($_FILES['download']['type'])){
+            $file_type = $_FILES['download']['type'];
+        }
+        
 
         if (!in_array($file_type, $allowed_types, true)) {
             return;
@@ -479,7 +483,8 @@ class Suya_Jobs
             'suya-jobs-form-block',
             plugins_url('blocks/job-application-form/index.js', __FILE__),
             array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-data'),
-            filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/index.js')
+            filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/index.js'),
+            false
         );
 
         // Register block type
@@ -523,7 +528,7 @@ class Suya_Jobs
         return new WP_Query([
             'post_type' => $post_type,
             'post_status' => 'publish',
-            'posts_per_page' => -1,
+            'posts_per_page' => 20,
             'meta_query' => [
                 [
                     'key' => 'close_date',

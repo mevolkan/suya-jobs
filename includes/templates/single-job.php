@@ -48,7 +48,7 @@ do_action('before_job_content');
                             ],
                             'download' => [
                                 'key' => '_download',
-                                'label' => __('Download:', 'suya-jobs'),
+                                'label' => __('Download Job Description:', 'suya-jobs'),
                                
                             ]
                         ];
@@ -71,7 +71,7 @@ do_action('before_job_content');
                     <div class="entry-content">
                         <?php
                         if (defined('ELEMENTOR_VERSION') && \Elementor\Plugin::$instance->documents->get(get_the_ID())->is_built_with_elementor()) {
-                            echo \Elementor\Plugin::$instance->frontend->get_builder_content(get_the_ID(), true);
+                            echo wp_kses_post(\Elementor\Plugin::$instance->frontend->get_builder_content(get_the_ID(), true));
                         } else {
                             the_content();
                         }

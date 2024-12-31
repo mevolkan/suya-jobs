@@ -1,2 +1,2 @@
 vendor/bin/phpcs -ps . --standard=WordPress
-php-cs-fixer fix 
+php-cs-fixer fix
