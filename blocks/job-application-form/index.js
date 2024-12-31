@@ -1,8 +1,7 @@
-// First, create a new file: blocks/job-application-form/index.js
-import { registerBlockType } from '@wordpress/blocks';
-import { useSelect } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
-import { RawHTML } from '@wordpress/element';
+const { registerBlockType } = wp.blocks;
+const { useSelect } = wp.data;
+const { useEffect } = wp.element;
+const { RawHTML } = wp.element;
 
 registerBlockType('suya-jobs/job-application-form', {
     title: 'Job Application Form',
@@ -17,7 +16,6 @@ registerBlockType('suya-jobs/job-application-form', {
         );
 
         useEffect(() => {
-            // This code runs in the editor
             const interval = setInterval(() => {
                 const jobPositionField = document.querySelector('input[name="field11[]"]');
                 if (jobPositionField) {
@@ -51,7 +49,7 @@ registerBlockType('suya-jobs/job-application-form', {
                         document.addEventListener('DOMContentLoaded', function() {
                             const jobPositionField = document.querySelector('input[name="field11[]"]');
                             if (jobPositionField) {
-                                jobPositionField.value = ${JSON.stringify(wp.data.select('core/editor').getEditedPostAttribute('title'))};
+                                jobPositionField.value = document.title.split(' - ')[0];
                             }
                         });
                     `

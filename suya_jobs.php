@@ -60,14 +60,10 @@ class Suya_Jobs
         add_filter('template_include', [$this, 'custom_template_include']);
 
         // Add block editor support
-        add_action('enqueue_block_editor_assets', [$this, 'enqueue_block_editor_assets']);
-        add_action('init', [$this, 'register_meta_fields']);
-
-        // Register job application form block
-        $this->register_job_application_form_block();
-
-        // Add block shortcode support
-        add_filter('render_block', array($this, 'process_form_block'), 10, 2);
+// Block editor related hooks
+add_action('init', [$this, 'register_meta_fields']);
+add_action('init', [$this, 'register_blocks']);
+add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
 
         }
     /**
@@ -118,17 +114,59 @@ class Suya_Jobs
         add_action('init', [$this, 'register_job_elementor_locations']);
         add_action('elementor/theme/register_conditions', [$this, 'add_job_template_conditions']);
         }
-
-    /**
-     * Get singleton instance
+/**
+     * Register blocks without scripts
      */
-    public static function get_instance(): self
-        {
-        if (self::$instance === null) {
-            self::$instance = new self();
-            }
-        return self::$instance;
+    public function register_blocks() {
+        if (!file_exists($this->blocks_dir)) {
+            mkdir($this->blocks_dir, 0755, true);
         }
+
+        register_block_type('suya-jobs/job-application-form', array(
+            'editor_script' => 'suya-jobs-form-block',
+        ));
+
+        // Add block shortcode support
+        add_filter('render_block', array($this, 'process_form_block'), 10, 2);
+    }
+
+ /**
+     * Register and enqueue admin scripts at the correct time
+     */
+    public function register_admin_scripts($hook) {
+        // Only register on post edit screens
+        if (!in_array($hook, array('post.php', 'post-new.php'))) {
+            return;
+        }
+
+        // Get post type
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'job') {
+            return;
+        }
+
+        // Register block editor assets
+        wp_register_script(
+            'suya-jobs-block-editor',
+            plugin_dir_url(__FILE__) . 'js/block-editor.js',
+            ['wp-blocks', 'wp-element', 'wp-components', 'wp-editor'],
+            self::VERSION,
+            true
+        );
+        wp_enqueue_script('suya-jobs-block-editor');
+
+        // Register form block script
+        wp_register_script(
+            'suya-jobs-form-block',
+            plugin_dir_url(__FILE__) . 'blocks/job-application-form/build/index.js',
+            array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-data'),
+            filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/build/index.js'),
+            true
+        );
+        wp_enqueue_script('suya-jobs-form-block');
+    }
+
+
 
     /**
      * Register shortcodes
@@ -549,7 +587,17 @@ class Suya_Jobs
         include plugin_dir_path(__FILE__) . "templates/{$template}.php";
         return ob_get_clean();
         }
-
+        
+    /**
+     * Get singleton instance
+     */
+    public static function get_instance(): self
+        {
+        if (self::$instance === null) {
+            self::$instance = new self();
+            }
+        return self::$instance;
+        }
     /**
      * Prevent cloning of singleton instance
      */

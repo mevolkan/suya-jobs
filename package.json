@@ -1,4 +1,6 @@
 {
+    "name": "suya-jobs",
+    "version": "1.0.0",
     "scripts": {
         "build": "wp-scripts build",
         "start": "wp-scripts start"
