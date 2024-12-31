@@ -28,6 +28,9 @@ class Suya_Jobs
      */
     private static $instance = null;
 
+    // Add new property for blocks
+    private $blocks_dir;
+
     /**
      * @var string Plugin version
      */
@@ -38,6 +41,9 @@ class Suya_Jobs
      */
     private function __construct()
         {
+            // Set blocks directory path
+        $this->blocks_dir = plugin_dir_path(__FILE__) . 'blocks/';
+
         $this->init_hooks();
         }
 
@@ -56,6 +62,13 @@ class Suya_Jobs
         // Add block editor support
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_block_editor_assets']);
         add_action('init', [$this, 'register_meta_fields']);
+
+        // Register job application form block
+        $this->register_job_application_form_block();
+
+        // Add block shortcode support
+        add_filter('render_block', array($this, 'process_form_block'), 10, 2);
+
         }
     /**
      * Register meta fields for block editor
@@ -415,6 +428,33 @@ class Suya_Jobs
                 }
             }
         return $template;
+        }
+
+
+
+        private function register_job_application_form_block() {
+            // Register block script
+            wp_register_script(
+                'suya-jobs-form-block',
+                plugins_url('blocks/job-application-form/index.js', __FILE__),
+                array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-data'),
+                filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/index.js')
+            );
+    
+            // Register block type
+            register_block_type('suya-jobs/job-application-form', array(
+                'editor_script' => 'suya-jobs-form-block',
+            ));
+        }
+    
+        /**
+         * Process form block to handle shortcodes
+         */
+        public function process_form_block($block_content, $block) {
+            if ($block['blockName'] === 'suya-jobs/job-application-form') {
+                return do_shortcode($block_content);
+            }
+            return $block_content;
         }
 
     /**
