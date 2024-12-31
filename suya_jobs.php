@@ -41,7 +41,7 @@ class Suya_Jobs
      */
     private function __construct()
         {
-            // Set blocks directory path
+        // Set blocks directory path
         $this->blocks_dir = plugin_dir_path(__FILE__) . 'blocks/';
 
         $this->init_hooks();
@@ -59,11 +59,11 @@ class Suya_Jobs
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_filter('template_include', [$this, 'custom_template_include']);
 
-        // Add block editor support
-// Block editor related hooks
-add_action('init', [$this, 'register_meta_fields']);
-add_action('init', [$this, 'register_blocks']);
-add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
+
+        // Block editor related hooks
+        add_action('init', [$this, 'register_meta_fields']);
+        add_action('init', [$this, 'register_blocks']);
+        add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
 
         }
     /**
@@ -114,13 +114,14 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
         add_action('init', [$this, 'register_job_elementor_locations']);
         add_action('elementor/theme/register_conditions', [$this, 'add_job_template_conditions']);
         }
-/**
+    /**
      * Register blocks without scripts
      */
-    public function register_blocks() {
+    public function register_blocks()
+        {
         if (!file_exists($this->blocks_dir)) {
             mkdir($this->blocks_dir, 0755, true);
-        }
+            }
 
         register_block_type('suya-jobs/job-application-form', array(
             'editor_script' => 'suya-jobs-form-block',
@@ -128,22 +129,23 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
 
         // Add block shortcode support
         add_filter('render_block', array($this, 'process_form_block'), 10, 2);
-    }
+        }
 
- /**
+    /**
      * Register and enqueue admin scripts at the correct time
      */
-    public function register_admin_scripts($hook) {
+    public function register_admin_scripts($hook)
+        {
         // Only register on post edit screens
         if (!in_array($hook, array('post.php', 'post-new.php'))) {
             return;
-        }
+            }
 
         // Get post type
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== 'job') {
             return;
-        }
+            }
 
         // Register block editor assets
         wp_register_script(
@@ -164,7 +166,7 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
             true
         );
         wp_enqueue_script('suya-jobs-form-block');
-    }
+        }
 
 
 
@@ -430,7 +432,7 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
     private function should_load_assets(): bool
         {
         return is_singular(['job']) ||
-            $this->has_any_shortcode([ 'suya_jobs']);
+            $this->has_any_shortcode(['suya_jobs']);
         }
 
 
@@ -470,29 +472,31 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
 
 
 
-        private function register_job_application_form_block() {
-            // Register block script
-            wp_register_script(
-                'suya-jobs-form-block',
-                plugins_url('blocks/job-application-form/index.js', __FILE__),
-                array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-data'),
-                filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/index.js')
-            );
-    
-            // Register block type
-            register_block_type('suya-jobs/job-application-form', array(
-                'editor_script' => 'suya-jobs-form-block',
-            ));
+    private function register_job_application_form_block()
+        {
+        // Register block script
+        wp_register_script(
+            'suya-jobs-form-block',
+            plugins_url('blocks/job-application-form/index.js', __FILE__),
+            array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-data'),
+            filemtime(plugin_dir_path(__FILE__) . 'blocks/job-application-form/index.js')
+        );
+
+        // Register block type
+        register_block_type('suya-jobs/job-application-form', array(
+            'editor_script' => 'suya-jobs-form-block',
+        ));
         }
-    
-        /**
-         * Process form block to handle shortcodes
-         */
-        public function process_form_block($block_content, $block) {
-            if ($block['blockName'] === 'suya-jobs/job-application-form') {
-                return do_shortcode($block_content);
+
+    /**
+     * Process form block to handle shortcodes
+     */
+    public function process_form_block($block_content, $block)
+        {
+        if ($block['blockName'] === 'suya-jobs/job-application-form') {
+            return do_shortcode($block_content);
             }
-            return $block_content;
+        return $block_content;
         }
 
     /**
@@ -587,7 +591,7 @@ add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
         include plugin_dir_path(__FILE__) . "templates/{$template}.php";
         return ob_get_clean();
         }
-        
+
     /**
      * Get singleton instance
      */

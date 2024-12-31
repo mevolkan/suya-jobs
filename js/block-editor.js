@@ -1,6 +1,6 @@
 const { registerPlugin } = wp.plugins;
 const { PluginDocumentSettingPanel } = wp.editPost;
-const { TextControl, DatePicker } = wp.components;
+const { TextControl, DatePicker, FileControl } = wp.components;
 const { useSelect, useDispatch } = wp.data;
 const { useEffect, useState } = wp.element;
 const { useBlockProps } = wp.blockEditor;
@@ -40,6 +40,13 @@ const JobMetaFields = () => {
             value={meta._location || ""}
             onChange={(value) => {
               editPost({ meta: { _location: value } });
+            }}
+          />
+          <FileControl
+            label="Download File"
+            value={meta._download || ""}
+            onChange={(value) => {
+              editPost({ meta: { _download: value } });
             }}
           />
 

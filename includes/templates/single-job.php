@@ -45,6 +45,11 @@ do_action('before_job_content');
                                 'transform' => function($value) {
                                     return date_i18n(get_option('date_format'), strtotime($value));
                                 }
+                            ],
+                            'download' => [
+                                'key' => '_download',
+                                'label' => __('Download:', 'suya-jobs'),
+                               
                             ]
                         ];
 
@@ -109,7 +114,7 @@ do_action('before_job_content');
 // Add inline styles
 wp_add_inline_style('suya-jobs', '
     .job-single-container {
-        max-width: 1200px;
+        max-width: 1100px;
         margin: 0 auto;
         padding: 2rem;
     }
