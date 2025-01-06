@@ -65,6 +65,9 @@ class Suya_Jobs
         add_action('init', [$this, 'register_blocks']);
         add_action('admin_enqueue_scripts', [$this, 'register_admin_scripts']);
 
+        // Styles
+        add_action('wp_enqueue_scripts', [$this, 'suya_jobs_enqueue_styles']);
+
         }
     /**
      * Register meta fields for block editor
@@ -121,7 +124,7 @@ class Suya_Jobs
         {
         if (!file_exists($this->blocks_dir)) {
             wp_mkdir_p($this->blocks_dir);
-            chmod($this->blocks_dir,0755);
+            chmod($this->blocks_dir, 0755);
             }
 
         register_block_type('suya-jobs/job-application-form', array(
@@ -277,7 +280,7 @@ class Suya_Jobs
         </p>
 
         <p>
-            <label for="download"><?php esc_html_e( 'Download:', 'suya-jobs'); ?></label>
+            <label for="download"><?php esc_html_e('Download:', 'suya-jobs'); ?></label>
             <?php
             $download_url = wp_get_attachment_url($download_id);
             if ($download_url) {
@@ -383,10 +386,10 @@ class Suya_Jobs
             }
 
         $allowed_types = ['application/pdf', 'application/msword'];
-        if ( isset($_FILES['download']['type'])){
+        if (isset($_FILES['download']['type'])) {
             $file_type = $_FILES['download']['type'];
-        }
-        
+            }
+
 
         if (!in_array($file_type, $allowed_types, true)) {
             return;
@@ -428,6 +431,60 @@ class Suya_Jobs
             ]);
             }
 
+        }
+    function suya_jobs_enqueue_styles()
+        {
+        $custom_css = "
+                .download-button {
+                    display: inline-block;
+                    padding: 0.8rem 1.5rem;
+                    background: #0073aa;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    transition: background 0.3s ease;
+                }
+                .download-button:hover {
+                    background: #005177;
+                    color: white;
+                }
+                       .job-single-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    .job-meta {
+        background: #f5f5f5;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+    .job-meta > div {
+        margin-bottom: 0.5rem;
+    }
+    .job-meta > div:last-child {
+        margin-bottom: 0;
+    }
+    .job-download {
+        margin-top: 2rem;
+    }
+    .download-button {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        background: #0073aa;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+    }
+    .download-button:hover {
+        background: #005177;
+        color: white;
+    }
+            ";
+        wp_add_inline_style('wp-block-library', $custom_css); // For block themes
+        wp_add_inline_style('classic-theme-styles', $custom_css); // For classic themes
+        wp_add_inline_style('elementor-frontend', $custom_css); // For Elementor themes
         }
 
     /**

@@ -112,43 +112,6 @@ do_action('before_job_content');
 </div>
 
 <?php
-// Add inline styles
-wp_add_inline_style('suya-jobs', '
-    .job-single-container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-    .job-meta {
-        background: #f5f5f5;
-        padding: 1.5rem;
-        margin: 1.5rem 0;
-        border-radius: 4px;
-    }
-    .job-meta > div {
-        margin-bottom: 0.5rem;
-    }
-    .job-meta > div:last-child {
-        margin-bottom: 0;
-    }
-    .job-download {
-        margin-top: 2rem;
-    }
-    .download-button {
-        display: inline-block;
-        padding: 0.8rem 1.5rem;
-        background: #0073aa;
-        color: white;
-        text-decoration: none;
-        border-radius: 4px;
-        transition: background 0.3s ease;
-    }
-    .download-button:hover {
-        background: #005177;
-        color: white;
-    }
-');
-
 // Handle footer based on theme type
 if (function_exists('elementor_theme_do_location') && elementor_theme_do_location('footer')) {
     // Elementor footer is handled
@@ -156,4 +119,4 @@ if (function_exists('elementor_theme_do_location') && elementor_theme_do_locatio
     wp_block_template_part('footer');
     } else {
     get_footer();
-    }
+    } 
