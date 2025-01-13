@@ -18,12 +18,6 @@ do_action('before_job_content');
             <?php while (have_posts()):
                 the_post(); ?>
 
-                <?php if (!defined('ELEMENTOR_VERSION') || !function_exists('elementor_theme_do_location') || !elementor_theme_do_location('single')): ?>
-                    <header class="entry-header">
-                        <h1 class="entry-title"><?php the_title(); ?></h1>
-                    </header>
-                <?php endif; ?>
-
                 <div class="job-content">
                     <!-- Job Metadata -->
                     <div class="job-meta">
@@ -97,7 +91,7 @@ do_action('before_job_content');
                         <?php add_formcraft_form("[fc id='1'][/fc]"); ?>
                         <script>
                             document.addEventListener('DOMContentLoaded', function () {
-                                const jobPositionField = document.querySelector('input[name="field11[]"]');
+                                const jobPositionField = document.querySelector('input[name="field18[]"]');
                                 if (jobPositionField) {
                                     jobPositionField.value = <?php echo wp_json_encode(get_the_title()); ?>;
                                 }

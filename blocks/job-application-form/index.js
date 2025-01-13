@@ -17,7 +17,7 @@ registerBlockType('suya-jobs/job-application-form', {
 
         useEffect(() => {
             const interval = setInterval(() => {
-                const jobPositionField = document.querySelector('input[name="field11[]"]');
+                const jobPositionField = document.querySelector('input[name="field18[]"]');
                 if (jobPositionField) {
                     jobPositionField.value = postTitle;
                     clearInterval(interval);
@@ -47,7 +47,7 @@ registerBlockType('suya-jobs/job-application-form', {
                 <script dangerouslySetInnerHTML={{
                     __html: `
                         document.addEventListener('DOMContentLoaded', function() {
-                            const jobPositionField = document.querySelector('input[name="field11[]"]');
+                            const jobPositionField = document.querySelector('input[name="field18[]"]');
                             if (jobPositionField) {
                                 jobPositionField.value = document.title.split(' - ')[0];
                             }
